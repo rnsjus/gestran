@@ -18,8 +18,8 @@ Atalhos: `Ctrl+K` busca global · `Alt+1..7` troca de aba · `Alt+M` recolhe o m
 
 - **Registro** dos eventos processuais com os campos mínimos do art. 9º, linha do tempo por processo
   e busca de empresa por CNPJ para atualizar cadastro.
-- **Sessões** das turmas com calendário, controle de quórum, detecção de conflito de horário,
-  e módulo de afastamentos com redistribuição automática do acervo (arts. 5º a 7º).
+- **Sessões** das turmas com calendário, assistente de lembrete, detecção de conflito de horário,
+  relatório semanal em PDF e módulo de afastamentos com redistribuição manual do acervo (arts. 5º a 7º).
 - **Monitoramento** dos acordos: parcelas, adimplência, perda por 90 dias de atraso (ato formal,
   reversível) e relatório em PDF por empresa.
 - **Dashboard** com as métricas do art. 10 derivadas dos dados reais, prescrição/decadência

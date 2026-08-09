@@ -49,7 +49,8 @@ O **número do processo** (`num` / `proc`) liga Registro ↔ Monitoramento ↔ K
 
 ## Regras de negócio (não alterar sem base normativa)
 
-- **Quórum** — turma delibera só com 3 votantes (número ímpar); par é vedado (art. 1º, § único).
+- **Quórum** — removido por decisão do usuário (não normativa): o sistema não controla mais nº de
+  votantes por sessão. Não reintroduzir campo/validação de quórum sem pedido explícito.
 - **Afastamento > 30 dias** — exige redistribuição do acervo (art. 6º); abaixo disso, suplente (art. 7º).
 - **Perda da negociação** — `LIMITE_PERDA = 90` dias de atraso. O sistema **sinaliza**
   (`c.perdaDevida`) mas a perda só vale como **ato formal** (`acordo.perda = {data, por, papel, motivo}`),

@@ -260,10 +260,6 @@
   .a-verde{background:#E7F4F0;color:#0B6B58;border-color:var(--verde)}
   .empty{font-size:12.5px;color:var(--txt2);text-align:center;padding:20px;font-style:italic}
 
-  .quorum{padding:13px 15px;border-radius:var(--r-sm);font-size:13px;font-weight:600;margin-top:14px;animation:fade .25s ease}
-  .q-ok{background:#E7F4F0;color:#0B6B58}
-  .q-bad{background:#FDF0EC;color:#9C3A17}
-
   /* ---------- CALENDÁRIO ---------- */
   .sess-layout{display:grid;grid-template-columns:340px 1fr;gap:18px}
   @media(max-width:900px){.sess-layout{grid-template-columns:1fr}}
@@ -656,9 +652,13 @@
     <section class="view" id="agenda">
       <div class="hero">
         <div><h2>Agendamento de Sessões</h2></div>
-        <div class="acts"><button class="hbtn" onclick="exportAgenda()">⬇ Exportar agenda (CSV)</button></div>
+        <div class="acts">
+          <button class="hbtn" onclick="relatorioSemanal()">⬇ Relatório da semana (PDF)</button>
+          <button class="hbtn" onclick="exportAgenda()">⬇ Exportar agenda (CSV)</button>
+        </div>
       </div>
       <div class="work" style="display:block">
+        <div class="assistente" id="assistenteSessao"></div>
         <div class="panel">
           <h3 id="formTitle">Agendar sessão</h3>
           <form onsubmit="event.preventDefault();salvarSessao();">
@@ -666,7 +666,6 @@
             <label>Turma<select id="sTurma"><option>Turma I</option><option>Turma II</option><option>Turma III</option></select></label>
             <label>Data / hora<input id="sData" type="datetime-local"></label>
             <label>Presidente da sessão<select id="sPres"><option>Dr. A. Souza</option><option>Dra. B. Lima</option><option>Dr. C. Nunes</option></select></label>
-            <label>Membros presentes<select id="sVot" onchange="checkQuorum()"><option value="3">3 membros</option><option value="2">2 membros</option><option value="1">1 membro</option></select></label>
             <label>Servidor responsável pelo agendamento<select id="sServ"><option>Ana Ribeiro</option><option>Marcos Alves</option><option>Júlia Costa</option><option>Rafael Menezes</option></select></label>
             <label>Processos em pauta (qtd. ou nº)<input id="sPauta" placeholder="Ex.: 6"></label>
             <div class="full" style="display:flex;gap:10px;align-items:center">
@@ -674,7 +673,6 @@
               <button class="btn sec" type="button" id="sCancel" style="display:none" onclick="cancelarEdicao()">Cancelar edição</button>
             </div>
           </form>
-          <div id="quorumBox"></div>
         </div>
 
         <div class="sess-layout">
@@ -684,6 +682,7 @@
               <button class="cal-nav" onclick="mudaMes(-1)">‹</button>
               <b id="calLabel">—</b>
               <button class="cal-nav" onclick="mudaMes(1)">›</button>
+              <button class="cal-nav" style="width:auto;padding:0 10px;font-size:11px" onclick="irParaHoje()">Hoje</button>
             </div>
             <div class="cal-grid" id="calDow"></div>
             <div class="cal-grid" id="calGrid" style="margin-top:5px"></div>
@@ -723,11 +722,10 @@
             <div class="alertbox" style="position:static">
               <h4>🔔 Alertas de pauta</h4>
               <div class="alerta a-verm"><span>🚨</span><div><b>2 processos urgentes</b> (art. 5º, §2º): risco de prescrição — vedado adiamento.</div></div>
-              <div class="alerta a-amar"><span>👤</span><div>Dra. B. Lima em férias &gt; 30 dias → redistribuição automática (art. 6º).</div></div>
+              <div class="alerta a-amar"><span>👤</span><div>Dra. B. Lima em férias &gt; 30 dias → redistribuição manual do acervo disponível (art. 6º).</div></div>
             </div>
             <div class="alertbox" style="position:static">
               <h4>ℹ️ Regras aplicadas</h4>
-              <div class="alerta a-azul"><span>⚖️</span><div>Turma com nº <b>par</b> de votantes não pode deliberar (art. 1º, § único).</div></div>
               <div class="alerta a-azul"><span>🕑</span><div>Conflito de horário na mesma turma é sinalizado ao agendar.</div></div>
             </div>
           </div>
@@ -788,7 +786,7 @@
               <label class="chk"><input type="checkbox" id="r_kpi" checked><span><b>Indicadores-chave (art. 10)</b><small>Propostas, taxa de êxito, recuperado, desconto, tempo médio, adimplemento</small></span></label>
               <label class="chk"><input type="checkbox" id="r_rel" checked><span><b>Desempenho por relator/turma</b><small>Admitidas, acordos, êxito, tempo e valor recuperado</small></span></label>
               <label class="chk"><input type="checkbox" id="r_aco" checked><span><b>Acordos & adimplência</b><small>Empresas, parcelas pagas, saldo e situação de cada acordo</small></span></label>
-              <label class="chk"><input type="checkbox" id="r_ses"><span><b>Agenda de sessões</b><small>Sessões agendadas, presidente, servidor e quórum</small></span></label>
+              <label class="chk"><input type="checkbox" id="r_ses"><span><b>Agenda de sessões</b><small>Sessões agendadas, presidente, servidor e status</small></span></label>
               <label class="chk"><input type="checkbox" id="r_aud"><span><b>Trilha de auditoria</b><small>Registro de quem alterou o quê e quando (governança)</small></span></label>
             </div>
             <div class="panel">
@@ -1342,19 +1340,23 @@ function iso(d){return d.toISOString().slice(0,10);}
 function addDays(n){const d=new Date(HOJE);d.setDate(d.getDate()+n);return d;}
 let seq=100;
 let sess=[
-  {id:++seq,turma:'Turma I',  data:iso(addDays(1)),hora:'16:00',pres:'Dr. C. Nunes',vot:3,proc:9,serv:'Ana Ribeiro',  status:'Agendada', criado:'hoje 09:12'},
-  {id:++seq,turma:'Turma I',  data:iso(addDays(3)),hora:'14:00',pres:'Dr. A. Souza',vot:3,proc:8,serv:'Ana Ribeiro',  status:'Agendada', criado:'hoje 09:20'},
-  {id:++seq,turma:'Turma II', data:iso(addDays(4)),hora:'10:00',pres:'Dra. B. Lima',vot:2,proc:5,serv:'Marcos Alves', status:'Agendada', criado:'ontem 15:40'},
-  {id:++seq,turma:'Turma III',data:iso(addDays(5)),hora:'09:00',pres:'Dr. C. Nunes',vot:3,proc:6,serv:'Júlia Costa',  status:'Agendada', criado:'ontem 11:05'},
-  {id:++seq,turma:'Turma II', data:iso(addDays(10)),hora:'11:00',pres:'Dra. B. Lima',vot:3,proc:4,serv:'Marcos Alves', status:'Agendada', criado:'hoje 08:03'},
-  {id:++seq,turma:'Turma I',  data:iso(addDays(-2)),hora:'15:00',pres:'Dr. A. Souza',vot:3,proc:7,serv:'Júlia Costa',  status:'Realizada',criado:'seg. passada'},
+  {id:++seq,turma:'Turma I',  data:iso(addDays(1)),hora:'16:00',pres:'Dr. C. Nunes',proc:9,serv:'Ana Ribeiro',  status:'Agendada', criado:'hoje 09:12'},
+  {id:++seq,turma:'Turma I',  data:iso(addDays(3)),hora:'14:00',pres:'Dr. A. Souza',proc:8,serv:'Ana Ribeiro',  status:'Agendada', criado:'hoje 09:20'},
+  {id:++seq,turma:'Turma II', data:iso(addDays(4)),hora:'10:00',pres:'Dra. B. Lima',proc:5,serv:'Marcos Alves', status:'Agendada', criado:'ontem 15:40'},
+  {id:++seq,turma:'Turma III',data:iso(addDays(5)),hora:'09:00',pres:'Dr. C. Nunes',proc:6,serv:'Júlia Costa',  status:'Agendada', criado:'ontem 11:05'},
+  {id:++seq,turma:'Turma II', data:iso(addDays(10)),hora:'11:00',pres:'Dra. B. Lima',proc:4,serv:'Marcos Alves', status:'Agendada', criado:'hoje 08:03'},
+  {id:++seq,turma:'Turma I',  data:iso(addDays(-2)),hora:'15:00',pres:'Dr. A. Souza',proc:7,serv:'Júlia Costa',  status:'Realizada',criado:'seg. passada'},
 ];
 let calRef=new Date(HOJE.getFullYear(),HOJE.getMonth(),1);
 let diaSel=null, editId=null;
 const statusTag={'Agendada':'t-azul','Realizada':'t-verde','Cancelada':'t-verm'};
-const quorumOk=v=>v>=3;
 
 function fmtData(isoStr,hora){const [y,m,d]=isoStr.split('-');return `${d}/${m} · ${hora}`;}
+function rotuloDia(dataStr){
+  if(dataStr===iso(HOJE))return '<span class="tag t-azul" style="margin-left:6px">Hoje</span>';
+  if(dataStr===iso(addDays(1)))return '<span class="tag t-cinza" style="margin-left:6px">Amanhã</span>';
+  return '';
+}
 
 function renderSess(){
   let lista=[...sess].sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
@@ -1363,7 +1365,7 @@ function renderSess(){
   if(!lista.length){tb.innerHTML='<tr><td colspan="6"><div class="empty">Nenhuma sessão neste filtro.</div></td></tr>';}
   lista.forEach(s=>{
     tb.innerHTML+=`<tr>
-      <td><b>${fmtData(s.data,s.hora)}</b></td><td>${s.turma}</td><td>${s.pres}</td>
+      <td><b>${fmtData(s.data,s.hora)}</b>${rotuloDia(s.data)}</td><td>${s.turma}</td><td>${s.pres}</td>
       <td title="Registrado ${s.criado}">${s.serv}</td>
       <td><span class="tag ${statusTag[s.status]} clk" onclick="cicloStatus(${s.id})" title="clique para mudar o status">${s.status}</span></td>
       <td style="white-space:nowrap"><span class="act" onclick="editarSessao(${s.id})" title="Editar">✏️</span><span class="act" onclick="excluirSessao(${s.id})" title="Excluir">🗑️</span></td>
@@ -1374,6 +1376,7 @@ function renderSess(){
   if(diaSel){const [y,m,d]=diaSel.split('-');si.style.display='flex';si.innerHTML=`📅 Filtrando <b>${d}/${m}/${y}</b> <span class="act" style="color:var(--azul)" onclick="selDia(null)">× limpar</span>`;}
   else si.style.display='none';
   renderCal();
+  renderAssistenteSessao();
 }
 
 function cicloStatus(id){const s=sess.find(x=>x.id===id);const ord=['Agendada','Realizada','Cancelada'];s.status=ord[(ord.indexOf(s.status)+1)%3];renderSess();GS.push('upsertSessao',s);log('Sessão','Status '+s.turma+' '+fmtData(s.data,s.hora)+' → '+s.status);toast('Status: '+s.turma+' → '+s.status);}
@@ -1381,33 +1384,41 @@ function excluirSessao(id){const s=sess.find(x=>x.id===id);if(!confirm('Excluir 
 function editarSessao(id){
   const s=sess.find(x=>x.id===id);editId=id;
   sTurma.value=s.turma; sData.value=s.data+'T'+s.hora; sPres.value=s.pres;
-  sVot.value=s.vot; sServ.value=s.serv; sPauta.value=s.proc;
+  sServ.value=s.serv; sPauta.value=s.proc;
   formTitle.textContent='Editar sessão — '+s.turma; sBtn.textContent='Salvar alterações';
   document.getElementById('sCancel').style.display='inline-block';
-  checkQuorum(); window.scrollTo({top:0,behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
 }
-function cancelarEdicao(){editId=null;document.querySelector('#agenda form').reset();formTitle.textContent='Agendar sessão';sBtn.textContent='Agendar sessão';document.getElementById('sCancel').style.display='none';quorumBox.innerHTML='';}
+function cancelarEdicao(){editId=null;document.querySelector('#agenda form').reset();formTitle.textContent='Agendar sessão';sBtn.textContent='Agendar sessão';document.getElementById('sCancel').style.display='none';}
 
 function salvarSessao(){
   const dt=sData.value;
   if(!dt){toast('Informe data e hora.','warn');return;}
   const [data,hora]=dt.split('T');
-  const vot=Number(sVot.value);
-  if(!quorumOk(vot)){checkQuorum();toast('⛔ Quórum inválido (nº par/insuficiente).','err');return;}
   // conflito: mesma turma + mesma data + mesma hora
   const conflito=sess.some(s=>s.id!==editId&&s.turma===sTurma.value&&s.data===data&&s.hora===hora);
   if(conflito){toast('🕑 Conflito: já há sessão da '+sTurma.value+' nesse horário.','warn');return;}
-  const dados={turma:sTurma.value,data,hora,pres:sPres.value,vot,proc:Number(sPauta.value)||0,serv:sServ.value};
+  const dados={turma:sTurma.value,data,hora,pres:sPres.value,proc:Number(sPauta.value)||0,serv:sServ.value};
   if(editId){const sx=sess.find(x=>x.id===editId);Object.assign(sx,dados);GS.push('upsertSessao',sx);log('Sessão','Sessão editada · '+dados.turma+' '+fmtData(dados.data,dados.hora));toast('✏️ Sessão atualizada.');}
-  else{const ns={id:++seq,...dados,status:'Agendada',criado:'agora'};sess.unshift(ns);GS.push('upsertSessao',ns);log('Sessão','Sessão agendada · '+dados.turma+' '+fmtData(dados.data,dados.hora)+' · '+dados.serv);toast('📅 Sessão agendada com quórum válido.');}
+  else{const ns={id:++seq,...dados,status:'Agendada',criado:'agora'};sess.unshift(ns);GS.push('upsertSessao',ns);log('Sessão','Sessão agendada · '+dados.turma+' '+fmtData(dados.data,dados.hora)+' · '+dados.serv);toast('📅 Sessão agendada.');}
   cancelarEdicao(); calRef=new Date(data.slice(0,4),Number(data.slice(5,7))-1,1); renderSess();
 }
-function checkQuorum(){
-  const v=Number(sVot.value);
-  quorumBox.innerHTML = v>=3
-    ? '<div class="quorum q-ok">✔ Quórum válido — 3 votantes (número ímpar). Sessão pode deliberar.</div>'
-    : v===2 ? '<div class="quorum q-bad">✖ Número PAR de votantes — vedado deliberar (art. 1º, § único). Convoque suplente (art. 7º).</div>'
-    : '<div class="quorum q-bad">✖ Sem maioria — recomponha o quórum antes da sessão.</div>';
+function irParaHoje(){calRef=new Date(HOJE.getFullYear(),HOJE.getMonth(),1);renderCal();}
+/* ---- assistente de sessão: lembrete contextual, sem infraestrutura de notificação ---- */
+function renderAssistenteSessao(){
+  const el=document.getElementById('assistenteSessao'); if(!el)return;
+  const futuras=sess.filter(s=>s.status==='Agendada'&&s.data>=iso(HOJE)).sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  const prox=futuras[0];
+  let msg;
+  if(!prox){
+    msg='<div class="alerta a-azul"><span>🤖</span><div>Nenhuma sessão agendada no momento. Use o formulário abaixo para marcar a próxima.</div></div>';
+  } else if(prox.data===iso(HOJE)){
+    msg=`<div class="alerta a-verde"><span>🤖</span><div><b>Você tem sessão hoje</b> — ${prox.turma} às ${prox.hora}, presidida por ${prox.pres}. <span class="act" style="color:var(--azul);font-weight:600" onclick="selDia('${prox.data}')">Ver no calendário</span></div></div>`;
+  } else {
+    const dias=dDays(iso(HOJE),prox.data);
+    msg=`<div class="alerta a-azul"><span>🤖</span><div>Sua próxima sessão é da <b>${prox.turma}</b>, em ${dias} dia${dias===1?'':'s'} (${fD(prox.data)}) às ${prox.hora}. <span class="act" style="color:var(--azul);font-weight:600" onclick="selDia('${prox.data}')">Ver no calendário</span></div></div>`;
+  }
+  el.innerHTML=`<div class="alertbox" style="position:static;margin-bottom:16px"><h4>🤖 Assistente de sessões</h4>${msg}</div>`;
 }
 
 /* ================= FASE 2 · AFASTAMENTOS E REDISTRIBUIÇÃO (arts. 5º a 7º) ================= */
@@ -1446,7 +1457,7 @@ function addAfastamento(){
   log('Sessão','Afastamento registrado · '+a.membro+' · '+a.tipo+' ('+diasAfast(a)+' dias)');
   toast(diasAfast(a)>30
     ? '⚠️ Afastamento de '+diasAfast(a)+' dias — redistribuição do acervo exigida (art. 6º).'
-    : '✔️ Afastamento registrado. Convocar suplente para o quórum (art. 7º).');
+    : '✔️ Afastamento registrado. Convocar suplente conforme art. 7º.');
 }
 function redistribuir(id){
   const a=afastamentos.find(x=>x.id===id); if(!a)return;
@@ -1522,8 +1533,8 @@ function baixarCSV(nome,linhas){
   toast('⬇ '+nome+' exportado.');
 }
 function exportAgenda(){
-  const L=[['Data','Hora','Turma','Presidente','Servidor','Votantes','Quorum','Status','Registrado']];
-  sess.forEach(s=>L.push([s.data,s.hora,s.turma,s.pres,s.serv,s.vot,quorumOk(s.vot)?'Válido':'Vedado',s.status,s.criado]));
+  const L=[['Data','Hora','Turma','Presidente','Servidor','Status','Registrado']];
+  sess.forEach(s=>L.push([s.data,s.hora,s.turma,s.pres,s.serv,s.status,s.criado]));
   baixarCSV('agenda-sessoes.csv',L);
 }
 function exportMetricas(){
@@ -1779,6 +1790,35 @@ function imprimirHTML(html,titulo){
     const a=document.createElement('a'); a.href=u; a.download=(titulo||'relatorio')+'.html'; a.click();
     toast('Impressão bloqueada — relatório baixado como arquivo.','warn');}};
   if(d.readyState==='complete')setTimeout(disparar,250); else f.onload=()=>setTimeout(disparar,250);
+}
+/* ---- relatório PDF: agenda da semana corrente (segunda a domingo) ---- */
+function relatorioSemanal(){
+  const dSem=HOJE.getDay(), offSeg=dSem===0?-6:1-dSem;
+  const segunda=addDays(offSeg), domingo=addDays(offSeg+6);
+  const ini=iso(segunda), fim=iso(domingo);
+  const lista=sess.filter(s=>s.data>=ini&&s.data<=fim).sort((a,b)=>(a.data+a.hora).localeCompare(b.data+b.hora));
+  const linhas=lista.length?lista.map(s=>`<tr><td>${fDataBR(new Date(s.data+'T12:00:00'))}${s.data===iso(HOJE)?' <span style="color:#E2521D;font-weight:700">(hoje)</span>':''}</td><td>${s.hora}</td><td>${s.turma}</td><td>${s.pres}</td><td>${s.serv}</td><td>${s.status}</td></tr>`).join('')
+    :'<tr><td colspan="6" style="text-align:center;color:#6B7A82">Nenhuma sessão agendada nesta semana.</td></tr>';
+  const html=`<html><head><meta charset="utf-8"><title>Agenda-Semana</title><style>
+    body{font-family:Segoe UI,Arial,sans-serif;color:#1F2A30;padding:34px;max-width:900px;margin:auto}
+    .hd{border-bottom:3px solid #E2521D;padding-bottom:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-end}
+    .hd h1{color:#0E7C66;font-size:19px} .hd .lg{background:#0E7C66;color:#fff;padding:6px 12px;border-radius:8px;font-weight:800;letter-spacing:.8px;font-size:13px}
+    .sub{color:#6B7A82;font-size:12px;margin:10px 0 18px;line-height:1.5}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+    th,td{border:1px solid #E4E7EA;padding:7px 9px;text-align:left}th{background:#F5F6F7;color:#0E7C66}
+    .ft{margin-top:26px;border-top:1px solid #E4E7EA;padding-top:10px;font-size:10.5px;color:#6B7A82}
+    @media print{.noprint{display:none}}
+    .noprint{margin-top:22px}.noprint button{background:#0E7C66;color:#fff;border:none;padding:11px 22px;border-radius:8px;cursor:pointer;font-size:14px}
+  </style></head><body>
+    <div class="hd"><div><h1>Agenda da Semana</h1></div><div class="lg">GESTRAN</div></div>
+    <div class="sub">Semana de ${fDataBR(segunda)} a ${fDataBR(domingo)}<br>
+    PROFAZ/CEDAT — PGM Fortaleza · Emitido por <b>${usuario.n}</b> (${usuario.r}) em ${new Date().toLocaleString('pt-BR')}</div>
+    <table><tr><th>Data</th><th>Hora</th><th>Turma</th><th>Presidente</th><th>Servidor</th><th>Status</th></tr>${linhas}</table>
+    <div class="ft">GESTRAN · CEDAT — documento gerado pelo sistema, sem valor de ata oficial.</div>
+    <div class="noprint"><button onclick="window.print()">🖨️ Imprimir / Salvar como PDF</button></div>
+  </body></html>`;
+  imprimirHTML(html,'Agenda-Semana');
+  log('Registro','Relatório semanal de agendamentos gerado ('+ini+' a '+fim+')');
 }
 /* ---- relatório PDF por empresa (situação do acordo + andamento da negociação) ---- */
 function relatorioAcordo(proc){
@@ -2149,7 +2189,7 @@ function seedAudit(){
   const mk=(min,u,tipo,det)=>auditoria.push({ts:new Date(Date.now()-min*60000),user:u.n,role:u.r,tipo,detalhe:det});
   mk(325,usuarios[0],'Registro','Novo evento Protocolo · 0812.004660/2026-11');
   mk(215,usuarios[2],'Vínculo','Acordo celebrado vinculado · Clínica Vida Plena Ltda');
-  mk(140,usuarios[1],'Sessão','Sessão agendada · Turma II · quórum válido');
+  mk(140,usuarios[1],'Sessão','Sessão agendada · Turma II · 10:00');
   mk(62, usuarios[2],'Parcela','Acordo 0812.004521/2026-11 · parcela 9 → Paga');
   mk(24, usuarios[0],'Exclusão','Registro removido · 0812.004544/2026-90');
   auditoria.sort((a,b)=>b.ts-a.ts);
@@ -2182,7 +2222,7 @@ function gerarRelatorioCSV(){
   if(r_kpi.checked){const k=kpisRep(baseFiltrada());p(['INDICADORES (art.10)']);p(['Propostas',k.n]);p(['Admitidas',k.admit]);p(['Acordos',k.ac]);p(['Taxa de exito %',k.exito.toFixed(1)]);p(['Recuperado R$mil',k.rec]);p(['Negociado R$mil',k.neg]);p(['Desconto medio %',k.desc.toFixed(1)]);p(['Tempo medio dias',Math.round(k.tempo)]);p(['Adimplemento %',k.adimp.toFixed(1)]);p([]);}
   if(r_rel.checked){p(['DESEMPENHO POR RELATOR']);p(['Relator','Turma','Admitidas','Acordos','Exito%','TempoMedio','RecuperadoRmil']);turmas.forEach(tu=>{const g=base.filter(x=>x.turma===tu),a=g.filter(x=>x.sit!=='Em análise').length,ac=g.filter(x=>x.sit==='Deferida').length;p([relatores[tu],tu,a,ac,(a?ac/a*100:0).toFixed(1),Math.round(g.reduce((s,x)=>s+x.tempo,0)/g.length),g.reduce((s,x)=>s+x.rec,0)]);});p([]);}
   if(r_aco.checked){p(['ACORDOS & ADIMPLENCIA']);p(['Empresa','CNPJ','Processo','Tributo','Transacionado','Pago','Saldo','Parcelas','Situacao']);acordos.forEach(a=>{const c=calc(a);p([a.emp,a.cnpj||'',a.proc,a.trib,a.trans,c.pago,c.saldo,c.pagas+'/'+a.parc,c.status]);});p([]);}
-  if(r_ses.checked){p(['AGENDA DE SESSOES']);p(['Data','Hora','Turma','Presidente','Servidor','Votantes','Status']);sess.forEach(s=>p([s.data,s.hora,s.turma,s.pres,s.serv,s.vot,s.status]));p([]);}
+  if(r_ses.checked){p(['AGENDA DE SESSOES']);p(['Data','Hora','Turma','Presidente','Servidor','Status']);sess.forEach(s=>p([s.data,s.hora,s.turma,s.pres,s.serv,s.status]));p([]);}
   if(r_aud.checked){p(['TRILHA DE AUDITORIA']);p(['DataHora','Usuario','Papel','Tipo','Detalhe']);auditoria.forEach(a=>p([a.ts.toLocaleString('pt-BR'),a.user,a.role,a.tipo,a.detalhe]));}
   baixarCSV('relatorio-profaz-cedat.csv',L);
   log('Registro','Relatório CSV gerado ('+r_per.value+')');
@@ -2194,7 +2234,7 @@ function gerarRelatorioPDF(){
   if(r_kpi.checked)b+=`<h2>Indicadores de desempenho (art. 10)</h2><div class="kg">${cardH('Propostas',fInt(k.n))}${cardH('Taxa de êxito',fPct(k.exito))}${cardH('Recuperado',fMi(k.rec))}${cardH('Desconto médio',fPct(k.desc))}${cardH('Tempo médio',fDia(k.tempo))}${cardH('Adimplemento',fPct(k.adimp))}</div>`;
   if(r_rel.checked){let r='';turmas.forEach(tu=>{const g=base.filter(x=>x.turma===tu),a=g.filter(x=>x.sit!=='Em análise').length,ac=g.filter(x=>x.sit==='Deferida').length;r+=`<tr><td>${relatores[tu]}</td><td>${tu}</td><td>${a}</td><td>${ac}</td><td>${(a?ac/a*100:0).toFixed(1)}%</td><td>${fMi(g.reduce((s,x)=>s+x.rec,0))}</td></tr>`;});b+=`<h2>Desempenho por relator</h2><table><tr><th>Relator</th><th>Turma</th><th>Admitidas</th><th>Acordos</th><th>Êxito</th><th>Recuperado</th></tr>${r}</table>`;}
   if(r_aco.checked){let r='';acordos.forEach(a=>{const c=calc(a);r+=`<tr><td>${a.emp}<br><small>${a.cnpj||'—'}</small></td><td>${a.trib}</td><td>${fBRL(a.trans)}</td><td>${fBRL(c.pago)}</td><td>${fBRL(c.saldo)}</td><td>${c.pagas}/${a.parc}</td><td>${c.status}</td></tr>`;});b+=`<h2>Acordos &amp; adimplência</h2><table><tr><th>Empresa / CNPJ</th><th>Tributo</th><th>Transacionado</th><th>Pago</th><th>Saldo</th><th>Parcelas</th><th>Situação</th></tr>${r}</table>`;}
-  if(r_ses.checked){let r='';sess.forEach(s=>r+=`<tr><td>${s.data} ${s.hora}</td><td>${s.turma}</td><td>${s.pres}</td><td>${s.serv}</td><td>${s.vot}</td><td>${s.status}</td></tr>`);b+=`<h2>Agenda de sessões</h2><table><tr><th>Data</th><th>Turma</th><th>Presidente</th><th>Servidor</th><th>Votantes</th><th>Status</th></tr>${r}</table>`;}
+  if(r_ses.checked){let r='';sess.forEach(s=>r+=`<tr><td>${s.data} ${s.hora}</td><td>${s.turma}</td><td>${s.pres}</td><td>${s.serv}</td><td>${s.status}</td></tr>`);b+=`<h2>Agenda de sessões</h2><table><tr><th>Data</th><th>Turma</th><th>Presidente</th><th>Servidor</th><th>Status</th></tr>${r}</table>`;}
   if(r_aud.checked){let r='';auditoria.slice(0,40).forEach(a=>r+=`<tr><td>${fTs(a.ts)}</td><td>${a.user}</td><td>${a.role}</td><td>${a.tipo}</td><td>${a.detalhe}</td></tr>`);b+=`<h2>Trilha de auditoria</h2><table><tr><th>Data</th><th>Usuário</th><th>Papel</th><th>Tipo</th><th>Detalhe</th></tr>${r}</table>`;}
   const html=`<html><head><title>Relatorio-GESTRAN-CEDAT</title><meta charset="utf-8"><style>
     body{font-family:Segoe UI,Arial,sans-serif;color:#152536;padding:32px;max-width:900px;margin:auto}
@@ -2284,7 +2324,7 @@ function hydrate(d){
     renderProc();
   }
   if(d.sessoes && d.sessoes.length){
-    sess=d.sessoes.map(function(s){return {id:+s.id,turma:s.turma,data:gsDate(s.data),hora:gsHora(s.hora),pres:s.pres,vot:+s.vot,proc:+s.proc||0,serv:s.serv,status:s.status,criado:s.criado||''};});
+    sess=d.sessoes.map(function(s){return {id:+s.id,turma:s.turma,data:gsDate(s.data),hora:gsHora(s.hora),pres:s.pres,proc:+s.proc||0,serv:s.serv,status:s.status,criado:s.criado||''};});
     seq=Math.max.apply(null,sess.map(function(s){return s.id;}).concat([seq])); renderSess();
   }
   if(d.acordos && d.acordos.length){
