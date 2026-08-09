@@ -620,7 +620,14 @@
               <div class="kb" id="kb"></div>
             </div>
             <div id="listaBox">
-            <div style="margin-bottom:12px"><input class="search" id="busca" placeholder="Buscar por processo, contribuinte, relator..." oninput="renderProc()"></div>
+            <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
+              <input class="search" id="busca" placeholder="Buscar por processo, contribuinte, relator..." oninput="renderProc()" style="flex:1;min-width:220px">
+              <select id="pTurma" onchange="renderProc()" style="padding:10px 13px;border:1px solid var(--borda);border-radius:12px;background:var(--surface);font-size:13px;cursor:pointer">
+                <option value="Todas">Todas as turmas</option>
+                <option>Turma I</option><option>Turma II</option><option>Turma III</option>
+              </select>
+            </div>
+            <div id="resumoTurma" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
             <table id="tblProc">
               <thead><tr><th class="sortable" data-k="num" onclick="ordenar('proc','num')">Processo</th><th class="sortable" data-k="contrib" onclick="ordenar('proc','contrib')">Contribuinte</th><th class="sortable" data-k="trib" onclick="ordenar('proc','trib')">Tributo</th><th class="sortable" data-k="turma" onclick="ordenar('proc','turma')">Turma</th><th class="sortable" data-k="rel" onclick="ordenar('proc','rel')">Relator</th><th class="sortable" data-k="ev" onclick="ordenar('proc','ev')">Eventos</th><th>Último evento</th><th>Prescrição</th><th></th></tr></thead>
               <tbody></tbody>
@@ -866,12 +873,13 @@
             <h3>Criar login <small>somente o Administrador cria contas de acesso</small></h3>
             <form onsubmit="event.preventDefault();addUser();">
               <label>Nome do servidor<input id="nuNome" placeholder="Ex.: Ana Ribeiro" required></label>
+              <label>E-mail do servidor<input id="nuEmail" type="email" placeholder="ex.: ana.ribeiro@pgm.fortaleza.ce.gov.br" required></label>
               <label>Perfil de acesso<select id="nuPapel"></select></label>
               <label class="full">Senha provisória <span class="mut" style="font-weight:500">(mínimo 6 caracteres — em branco, o sistema gera uma)</span>
                 <input id="nuSenha" placeholder="deixe em branco para gerar automaticamente"></label>
               <div class="full" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
                 <button class="btn" type="submit">＋ Criar login</button>
-                <span class="mut">O servidor será obrigado a trocar a senha no primeiro acesso.</span>
+                <span class="mut">A senha provisória é enviada por e-mail ao servidor (requer Google Sheets conectado) e ele será obrigado a trocá-la no primeiro acesso.</span>
               </div>
             </form>
           </div>
@@ -1188,8 +1196,9 @@ function renderPrescricao(){
 }
 function renderProc(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
+  const tf=(document.getElementById('pTurma')||{}).value||'Todas';
   const tb=document.querySelector('#tblProc tbody');tb.innerHTML='';
-  let vis=processos.filter(p=>!q||(p.num+' '+p.contrib+' '+p.trib+' '+p.rel).toLowerCase().includes(q));
+  let vis=processos.filter(p=>(tf==='Todas'||p.turma===tf)&&(!q||(p.num+' '+p.contrib+' '+p.trib+' '+p.rel).toLowerCase().includes(q)));
   if(sortProc.k){const k=sortProc.k,d=sortProc.dir;
     vis=vis.slice().sort((a,b)=>{const va=k==='ev'?a.eventos.length:String(a[k]||'').toLowerCase(),vb=k==='ev'?b.eventos.length:String(b[k]||'').toLowerCase();return va>vb?d:va<vb?-d:0;});}
   const rp=fatiar(vis,'proc'); vis=rp.itens;
@@ -1197,9 +1206,19 @@ function renderProc(){
     tb.innerHTML+=`<tr class="row-emp" onclick="abrirRegistro(${gi})"><td><b>${p.num}</b></td><td>${p.contrib}</td><td>${p.trib}</td><td>${p.turma}</td><td>${p.rel}</td><td>${p.eventos.length}</td><td><span class="tag t-azul">${u.evento}</span></td><td><span class="tag ${prescCls[pr.st]}" title="${pr.dias<0?'prescrito há '+(-pr.dias)+' dias':pr.dias+' dias restantes'}">${pr.st}</span></td><td><span class="act" style="color:var(--vermelho)" onclick="event.stopPropagation();delProc(${gi})">🗑️</span></td></tr>`;});
   document.getElementById('cnt').textContent=rp.tot+' de '+processos.length+' processos';
   barraPag('proc',rp,'pagProc');
+  renderResumoTurma(q,tf);
   if(typeof renderGargalos==='function')renderGargalos();
   if(typeof renderKanban==='function'&&modoRegistro==='kanban')renderKanban();
   if(typeof sincDashboard==='function')sincDashboard();
+}
+function filtrarTurmaProc(t){const el=document.getElementById('pTurma');if(el){el.value=t;renderProc();}}
+function renderResumoTurma(q,tf){
+  const el=document.getElementById('resumoTurma'); if(!el)return;
+  const cont={}; turmas.forEach(t=>cont[t]=0);
+  let totalFiltrado=0;
+  processos.forEach(p=>{ if(!q||(p.num+' '+p.contrib+' '+p.trib+' '+p.rel).toLowerCase().includes(q)){ cont[p.turma]=(cont[p.turma]||0)+1; totalFiltrado++; } });
+  el.innerHTML='<span class="tag '+(tf==='Todas'?'t-azul':'t-cinza')+' clk" onclick="filtrarTurmaProc(\'Todas\')" title="Ver todas as turmas">Todas: '+totalFiltrado+' processo(s)</span>'
+    +turmas.map(t=>'<span class="tag '+(t===tf?'t-azul':'t-cinza')+' clk" onclick="filtrarTurmaProc(\''+t+'\')" title="Filtrar por '+t+'">'+t+': '+cont[t]+' processo(s) · '+(relatores[t]||'')+'</span>').join('');
 }
 function delProc(i){const p=processos[i];processos.splice(i,1);renderProc();log('Exclusão','Processo removido · '+(p?p.num+' · '+p.contrib:''));toast('🗑️ Processo removido.');}
 /* ---- busca por CNPJ: recupera empresa já cadastrada e preenche o formulário ---- */
@@ -1434,18 +1453,44 @@ function redistribuir(id){
   const acv=acervoDe(a.membro);
   if(!acv.length){toast('Sem processos em curso para redistribuir.','warn');a.redistribuido=true;renderAfast();return;}
   const destinos=Object.values(relatores).filter(r=>r!==a.membro);
-  if(!confirm('Redistribuir '+acv.length+' processo(s) de '+a.membro+' entre '+destinos.join(' e ')+'?'))return;
-  acv.forEach((p,i)=>{
-    const novo=destinos[i%destinos.length];
-    p.rel=novo; p.turma=turmaDoRelator(novo);
+  modal.innerHTML=`
+    <div class="mh"><span class="close" onclick="fecharModal()">×</span><h3>↔ Redistribuir acervo — ${a.membro}</h3><p>${acv.length} processo(s) em curso. Escolha a turma de destino de cada um (art. 6º).</p></div>
+    <div class="mb">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr><th style="text-align:left;padding:6px 4px">Processo</th><th style="text-align:left;padding:6px 4px">Contribuinte</th><th style="text-align:left;padding:6px 4px">Turma de destino</th></tr></thead>
+        <tbody>
+        ${acv.map((p,i)=>{
+          const gi=processos.indexOf(p);
+          const opts=destinos.map((r,di)=>`<option value="${turmaDoRelator(r)}" ${di===i%destinos.length?'selected':''}>${turmaDoRelator(r)} — ${r}</option>`).join('');
+          return `<tr><td style="padding:6px 4px"><b>${p.num}</b></td><td style="padding:6px 4px">${p.contrib}</td><td style="padding:6px 4px"><select id="redTurma${gi}" style="width:100%;padding:6px 8px;border:1px solid var(--borda);border-radius:8px;background:var(--field)">${opts}</select></td></tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+      <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+        <button class="btn sec" onclick="fecharModal()">Cancelar</button>
+        <button class="btn" onclick="confirmarRedistribuicao(${id})">Confirmar redistribuição</button>
+      </div>
+    </div>`;
+  abrirModalA11y();
+}
+function confirmarRedistribuicao(id){
+  const a=afastamentos.find(x=>x.id===id); if(!a)return;
+  const acv=acervoDe(a.membro);
+  acv.forEach(p=>{
+    const gi=processos.indexOf(p);
+    const sel=document.getElementById('redTurma'+gi);
+    const turmaDestino=sel?sel.value:p.turma;
+    const novoRel=relatores[turmaDestino]||p.rel;
+    p.rel=novoRel; p.turma=turmaDestino;
     p.eventos.push({evento:'Distribuição',data:iso(HOJE)});
     GS.push('appendEvento',{num:p.num,evento:'Distribuição',data:iso(HOJE),result:'Redistribuição por afastamento'});
     GS.push('upsertProcesso',{num:p.num,contrib:p.contrib,cnpj:p.cnpj,trib:p.trib,turma:p.turma,rel:p.rel,valor:p.valor,vtrans:p.vtrans,desc:p.desc,parc:p.parc,cond:p.cond,adimp:p.adimp});
   });
   a.redistribuido=true;
+  fecharModal();
   renderAfast(); renderProc(); renderAlertas();
-  log('Sessão','Redistribuição por afastamento · '+a.membro+' → '+acv.length+' processo(s) entre '+destinos.join(', '));
-  toast('↔ '+acv.length+' processo(s) redistribuído(s) de forma equitativa (art. 6º).');
+  log('Sessão','Redistribuição manual por afastamento · '+a.membro+' → '+acv.length+' processo(s)');
+  toast('↔ '+acv.length+' processo(s) redistribuído(s) manualmente (art. 6º).');
 }
 
 /* ---- calendário ---- */
@@ -1983,6 +2028,7 @@ function renderUsers(){
     tb.innerHTML+=`<tr style="${ativo?'':'opacity:.55'}">
       <td><div style="width:32px;height:32px;border-radius:50%;background:${ativo?'var(--azul)':'var(--txt2)'};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${u.av||iniciais(u.n)}</div></td>
       <td><b>${u.n}</b>${eu?' <span class="tag t-azul">você</span>':''}
+        ${u.email?'<br><small class="mut">'+u.email+'</small>':''}
         ${u.senhaPadrao?'<br><small class="mut">senha provisória — troca no 1º acesso</small>':''}</td>
       <td>${admin?`<select class="rsel" aria-label="Papel de ${u.n}" onchange="mudarPapel(${i},this.value)">${sel}</select>`:`<span class="rolepill">${u.r}</span>`}</td>
       <td><small class="mut">${abas||'—'}</small></td>
@@ -2034,18 +2080,30 @@ async function redefinirSenha(i){
   alert('Senha provisória de '+u.n+':\n\n'+s+'\n\nEntregue ao servidor. Ele deverá trocá-la no primeiro acesso.');
   toast('🔑 Senha de '+u.n+' redefinida.');
 }
+const emailValido=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v||'');
 async function addUser(){
   if(!exigeAdmin())return;
   const n=nuNome.value.trim();if(!n){toast('Informe o nome do servidor.','warn');return;}
+  const email=(nuEmail.value||'').trim();
+  if(!emailValido(email)){toast('Informe um e-mail válido do servidor.','warn');return;}
   if(usuarios.some(u=>u.n.toLowerCase()===n.toLowerCase())){toast('Já existe usuário com esse nome.','warn');return;}
   const digitada=nuSenha.value.trim();
   const s=digitada.length>=6?digitada:senhaTemporaria();
-  usuarios.push({n,r:nuPapel.value,av:iniciais(n),hash:await hashSenha(s),senhaPadrao:true,ativo:true});
-  log('Registro','Login criado pelo Administrador · '+n+' ('+nuPapel.value+')');
+  const papel=nuPapel.value;
+  usuarios.push({n,r:papel,email,av:iniciais(n),hash:await hashSenha(s),senhaPadrao:true,ativo:true});
+  log('Registro','Login criado pelo Administrador · '+n+' ('+papel+')');
   document.querySelector('#admin form').reset();nuPapel.innerHTML=PAPEIS.map(p=>`<option>${p}</option>`).join('');
   renderAdmin();initSelects();GS.push('users',{usuarios:usrMapOut()});
-  alert('Login criado.\n\nUsuário: '+n+'\nPerfil: '+usuarios[usuarios.length-1].r+'\nSenha provisória: '+s+'\n\nO servidor deverá trocá-la no primeiro acesso.');
-  toast('✔️ Login de '+n+' criado.');
+  if(GS.ativo()){
+    toast('📧 Enviando credenciais para '+email+'…');
+    GS.call('enviarCredenciais',{nome:n,email,senha:s,papel}).then(function(r){
+      if(r&&r.ok){ log('Registro','Credenciais enviadas por e-mail · '+n+' ('+email+')'); toast('✔️ Login de '+n+' criado e credenciais enviadas por e-mail.'); }
+      else { log('Registro','Falha ao enviar credenciais por e-mail · '+n); toast('⚠️ Login criado, mas o e-mail não pôde ser enviado. Senha provisória: '+s,'warn'); alert('Login criado.\n\nUsuário: '+n+'\nPerfil: '+papel+'\nSenha provisória: '+s+'\n\nNão foi possível enviar por e-mail — repasse manualmente.'); }
+    });
+  } else {
+    toast('✔️ Login de '+n+' criado.');
+    alert('Login criado.\n\nUsuário: '+n+'\nPerfil: '+papel+'\nSenha provisória: '+s+'\n\nGoogle Sheets não está conectado, então o e-mail não foi enviado — repasse a senha manualmente. O servidor deverá trocá-la no primeiro acesso.');
+  }
 }
 function renderMatrix(){
   let h='<tr><th>Papel</th>'+ABAS.map(a=>`<th>${a.n}</th>`).join('')+'</tr>';
@@ -2210,13 +2268,14 @@ const GS={
 };
 function gsStatus(t,ok){var el=document.getElementById('gsStatus');if(el){el.textContent=t;el.style.color=ok?'var(--verde)':'var(--txt2)';}}
 function gsDate(v){ if(!v)return ''; if(v instanceof Date){var p=function(n){return String(n).padStart(2,'0');};return v.getFullYear()+'-'+p(v.getMonth()+1)+'-'+p(v.getDate());} v=String(v); return v.indexOf('T')>0?v.slice(0,10):v; }
+function gsHora(v){ if(!v)return ''; var p=function(n){return String(n).padStart(2,'0');}; if(v instanceof Date)return p(v.getUTCHours())+':'+p(v.getUTCMinutes()); v=String(v); var i=v.indexOf('T'); return i>0?v.slice(i+1,i+6):v.slice(0,5); }
 function gsBool(v){ return v===true||v==='true'||v==='TRUE'||v===1||v==='1'; }
 function gsJSON(v,def){ try{return typeof v==='string'?JSON.parse(v):(v||def);}catch(e){return def;} }
 function acOut(a){return {proc:a.proc,emp:a.emp,cnpj:a.cnpj,trib:a.trib,turma:a.turma,relator:a.relator,cons:a.cons,desc:a.desc,parc:a.parc,venc:(a.venc==null?'':a.venc),anchor:a.anchor,parcelas:JSON.stringify(a.parcelas),rescindido:!!a.rescindido,perda:a.perda?JSON.stringify(a.perda):'',rev:(a.rev=(a.rev||0)+1)};}
 function procMapOut(){return processos.map(function(p){return {num:p.num,contrib:p.contrib,cnpj:p.cnpj,trib:p.trib,turma:p.turma,rel:p.rel,valor:p.valor,vtrans:p.vtrans,desc:p.desc,parc:p.parc,cond:p.cond,adimp:p.adimp};});}
 function evMapOut(){var out=[];processos.forEach(function(p){p.eventos.forEach(function(e){out.push({num:p.num,evento:e.evento,data:e.data,result:e.result||''});});});return out;}
 function acMapOut(){return acordos.map(acOut);}
-function usrMapOut(){return usuarios.map(function(u){return {nome:u.n,papel:u.r,senha:u.hash||'',av:u.av,senhaPadrao:!!u.senhaPadrao,ativo:(u.ativo!==false)};});}
+function usrMapOut(){return usuarios.map(function(u){return {nome:u.n,papel:u.r,email:u.email||'',senha:u.hash||'',av:u.av,senhaPadrao:!!u.senhaPadrao,ativo:(u.ativo!==false)};});}
 function hydrate(d){
   if(d.processos && d.processos.length){
     var evByNum={}; (d.eventos||[]).forEach(function(e){ (evByNum[e.num]=evByNum[e.num]||[]).push({evento:e.evento,data:gsDate(e.data),result:e.result||undefined}); });
@@ -2225,7 +2284,7 @@ function hydrate(d){
     renderProc();
   }
   if(d.sessoes && d.sessoes.length){
-    sess=d.sessoes.map(function(s){return {id:+s.id,turma:s.turma,data:gsDate(s.data),hora:s.hora,pres:s.pres,vot:+s.vot,proc:+s.proc||0,serv:s.serv,status:s.status,criado:s.criado||''};});
+    sess=d.sessoes.map(function(s){return {id:+s.id,turma:s.turma,data:gsDate(s.data),hora:gsHora(s.hora),pres:s.pres,vot:+s.vot,proc:+s.proc||0,serv:s.serv,status:s.status,criado:s.criado||''};});
     seq=Math.max.apply(null,sess.map(function(s){return s.id;}).concat([seq])); renderSess();
   }
   if(d.acordos && d.acordos.length){
@@ -2234,7 +2293,7 @@ function hydrate(d){
       return {proc:String(a.proc),emp:a.emp,cnpj:a.cnpj,trib:a.trib,turma:a.turma,relator:a.relator,cons:cons,desc:desc,parc:parc,venc:(a.venc===''||a.venc==null?null:+a.venc),anchor:+a.anchor||0,trans:trans,vparc:parc?trans/parc:0,rescindido:gsBool(a.rescindido),parcelas:parcelas,perda:gsJSON(a.perda,null),rev:+a.rev||0};});
     initMonitor();renderMonitor();renderEmp();
   }
-  if(d.usuarios && d.usuarios.length){ usuarios=d.usuarios.map(function(u){return {n:u.nome,r:u.papel,hash:String(u.senha||''),av:u.av,senhaPadrao:gsBool(u.senhaPadrao),ativo:(u.ativo===''||u.ativo===undefined)?true:gsBool(u.ativo)};}); initSelects(); }
+  if(d.usuarios && d.usuarios.length){ usuarios=d.usuarios.map(function(u){return {n:u.nome,r:u.papel,email:u.email||'',hash:String(u.senha||''),av:u.av,senhaPadrao:gsBool(u.senhaPadrao),ativo:(u.ativo===''||u.ativo===undefined)?true:gsBool(u.ativo)};}); initSelects(); }
   if(d.permissoes && d.permissoes.length){ var pm={}; d.permissoes.forEach(function(r){pm[r.papel]={dash:gsBool(r.dash)?1:0,registro:gsBool(r.registro)?1:0,agenda:gsBool(r.agenda)?1:0,monitor:gsBool(r.monitor)?1:0,relatorios:gsBool(r.relatorios)?1:0,audit:gsBool(r.audit)?1:0,admin:gsBool(r.admin)?1:0};}); Object.assign(perms,pm); if(document.getElementById('admin').classList.contains('active'))renderAdmin(); }
   if(d.auditoria && d.auditoria.length){ auditoria=d.auditoria.map(function(a){return {ts:new Date(a.ts),user:a.user,role:a.role,tipo:a.tipo,detalhe:a.detalhe};}).sort(function(x,y){return y.ts-x.ts;}); if(document.getElementById('audit').classList.contains('active'))renderAudit(); }
   sincDashboard();

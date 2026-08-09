@@ -30,7 +30,7 @@ Este guia conecta o painel GESTRAN a uma planilha do Google, para que os dados *
 | **Eventos** | num, evento, data, result, registradoPor, registradoEm |
 | **Sessoes** | id, turma, data, hora, pres, vot, proc, serv, status, criado, criadoPor, criadoEm, rev |
 | **Acordos** | proc, emp, cnpj, trib, turma, relator, cons, desc, parc, venc, anchor, parcelas, rescindido, perda, rev, atualizadoPor, atualizadoEm |
-| **Usuarios** | nome, papel, senha (hash SHA-256), av, senhaPadrao, ativo |
+| **Usuarios** | nome, papel, email, senha (hash SHA-256), av, senhaPadrao, ativo |
 | **Permissoes** | papel, dash, registro, agenda, monitor, relatorios, audit, admin |
 | **Auditoria** | ts, user, role, tipo, detalhe, origem |
 
@@ -56,6 +56,26 @@ A aba **Eventos** registra automaticamente `registradoPor` (e-mail da conta Goog
 - **LGPD:** a base tem dados de contribuintes (CNPJ, valores, situação fiscal). Restrinja o
   compartilhamento da planilha, defina retenção e anonimize relatórios agregados.
 - **Backups:** o histórico de versões do Google Sheets serve de backup; para retenção formal, exporte periodicamente.
+
+## Atualizando o `Code.gs` (nova versão)
+
+Sempre que o `Code.gs` deste repositório mudar (ex.: nova ação, nova coluna),
+repita:
+
+1. Abra o projeto no editor do Apps Script (Extensões → Apps Script, a
+   partir da mesma planilha).
+2. Apague o conteúdo do arquivo e cole o `Code.gs` atualizado. Salve.
+3. **Implantar → Gerenciar implantações → ✏️ editar a implantação existente
+   → Versão: Nova versão → Implantar.** A URL `/exec` **não muda**.
+4. Se a mudança usa um recurso novo do Google (ex.: `MailApp.sendEmail`
+   para enviar credenciais por e-mail), o Google pode pedir uma nova
+   autorização na primeira execução — aceite normalmente (é a mesma conta
+   que já autorizou o script antes).
+5. Esta versão adiciona a coluna **email** na aba **Usuarios**. Não precisa
+   editar a planilha manualmente: a aba Usuarios é inteiramente reescrita
+   (cabeçalho incluído) toda vez que uma conta é criada ou alterada pelo
+   Admin — então, assim que você criar ou editar qualquer usuário depois de
+   reimplantar, a coluna aparece sozinha.
 
 ## Observações técnicas
 

@@ -17,7 +17,7 @@ const SHEETS = {
   Eventos:    ['num','evento','data','result','registradoPor','registradoEm'],
   Sessoes:    ['id','turma','data','hora','pres','vot','proc','serv','status','criado','criadoPor','criadoEm','rev'],
   Acordos:    ['proc','emp','cnpj','trib','turma','relator','cons','desc','parc','venc','anchor','parcelas','rescindido','perda','rev','atualizadoPor','atualizadoEm'],
-  Usuarios:   ['nome','papel','senha','av','senhaPadrao','ativo'],
+  Usuarios:   ['nome','papel','email','senha','av','senhaPadrao','ativo'],
   Permissoes: ['papel','dash','registro','agenda','monitor','relatorios','audit','admin'],
   Auditoria:  ['ts','user','role','tipo','detalhe','origem']
 };
@@ -27,7 +27,7 @@ const EXIGE = {
   upsertProcesso:'registro', appendEvento:'registro',
   upsertSessao:'agenda',     deleteSessao:'agenda',
   upsertAcordo:'monitor',
-  users:'admin', perms:'admin', seed:'admin', setup:'admin'
+  users:'admin', perms:'admin', seed:'admin', setup:'admin', enviarCredenciais:'admin'
 };
 function permitido_(action, papel){
   const aba = EXIGE[action];
@@ -149,6 +149,7 @@ function doPost(e){
       case 'perms':           replaceAll_('Permissoes', Object.keys(p.perms||{}).map(function(role){ return Object.assign({papel:role}, p.perms[role]); })); return json_({ok:true});
       case 'audit':           appendRow_('Auditoria',{ ts:new Date(), user:(quem||p.user), role:p.role||papel, tipo:p.tipo||'', detalhe:p.detalhe||'', origem:'app' }); return json_({ok:true});
       case 'seed':            seed_(p); return json_({ok:true});
+      case 'enviarCredenciais': return json_(enviarCredenciais_(p, quem, papel));
       default:                return json_({ error:'Ação desconhecida: '+a });
     }
   } catch(err){ return json_({ error:String(err) }); }
@@ -162,4 +163,27 @@ function seed_(p){
   if(p.acordos)   p.acordos.forEach(function(x){ upsertRow_('Acordos','proc',x); });
   if(p.usuarios)  replaceAll_('Usuarios', p.usuarios);
   if(p.perms)     replaceAll_('Permissoes', Object.keys(p.perms).map(function(r){ return Object.assign({papel:r}, p.perms[r]); }));
+}
+
+// Envia as credenciais de acesso por e-mail a um servidor recém-cadastrado.
+// A senha só trafega em texto puro aqui, para compor o e-mail — nunca é gravada assim em nenhuma aba.
+function enviarCredenciais_(p, quem, papel){
+  if(!p.email) return {error:'E-mail não informado.'};
+  try{
+    var assunto='GESTRAN · CEDAT — acesso ao sistema';
+    var corpo='Olá, '+(p.nome||'')+',\n\n'+
+      'Uma conta de acesso ao GESTRAN · CEDAT foi criada para você.\n\n'+
+      'Perfil: '+(p.papel||'')+'\n'+
+      'Senha provisória: '+(p.senha||'')+'\n\n'+
+      'Por segurança, troque essa senha no primeiro acesso (menu Configurações no canto superior direito).\n\n'+
+      'Se você não esperava este e-mail, avise o Administrador do sistema.';
+    MailApp.sendEmail(p.email, assunto, corpo);
+    appendRow_('Auditoria',{ ts:new Date(), user:quem, role:papel, tipo:'Credenciais enviadas',
+      detalhe:'E-mail enviado para '+p.nome+' ('+p.email+')', origem:'servidor' });
+    return {ok:true};
+  }catch(err){
+    appendRow_('Auditoria',{ ts:new Date(), user:quem, role:papel, tipo:'Falha ao enviar credenciais',
+      detalhe:String(err)+' · '+p.nome+' ('+p.email+')', origem:'servidor' });
+    return {error:String(err)};
+  }
 }
