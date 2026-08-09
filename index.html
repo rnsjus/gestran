@@ -120,9 +120,9 @@
   .pwlbl input{display:block;width:100%;margin-top:6px;padding:11px 13px;border:1px solid var(--borda);border-radius:11px;font-size:14px;background:#fbfcfd;font-family:inherit}
   .pwlbl input:focus{outline:none;border-color:var(--ciano);background:#fff}
   /* login */
-  #loginScreen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:stretch;justify-content:center}
+  #loginScreen{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:stretch;justify-content:center;overflow-y:auto}
   #loginScreen.hide{display:none}
-  .login-wrap{display:flex;width:100%}
+  .login-wrap{display:flex;width:100%;min-height:100%}
   .login-side{flex:1;background:linear-gradient(150deg,#0a5c4c 0%,#0E7C66 55%,#12907a 100%);color:#fff;padding:56px 54px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
   .login-side::after{content:"";position:absolute;right:-90px;bottom:-90px;width:320px;height:320px;border-radius:50%;background:rgba(255,255,255,.06)}
   .login-side .lgmark{display:inline-flex;align-items:center;gap:11px;margin-bottom:34px}
@@ -135,7 +135,8 @@
   .login-side .feats i{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;flex-shrink:0}
   .login-side .rodape{position:absolute;bottom:26px;left:54px;font-size:11px;opacity:.7}
   .login-main{width:470px;flex-shrink:0;background:var(--surface);display:flex;align-items:center;justify-content:center;padding:40px 46px;border-left:1px solid var(--borda)}
-  @media(max-width:920px){.login-side{display:none}.login-main{width:100%;border:none}}
+  @media(max-width:920px){.login-side{display:none}.login-main{width:100%;border:none;padding:32px 22px;align-items:flex-start}}
+  @media(max-width:420px){.login-main{padding:24px 16px}}
   .login-card{width:100%;max-width:360px;text-align:left;animation:fade .4s ease}
   .login-emblem{display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:12px;background:var(--azul);margin:0 0 20px;box-shadow:0 6px 16px rgba(14,124,102,.24)}
   .login-emblem .le-name{font-size:23px;font-weight:800;letter-spacing:.5px;color:#fff}
