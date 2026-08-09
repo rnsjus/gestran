@@ -1,0 +1,13 @@
+{
+  "name": "gestran-cedat",
+  "version": "1.0.0",
+  "description": "GESTRAN · CEDAT — Gestão Estratégica de Transações (PROFAZ/PGM Fortaleza)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/smoke-init.mjs",
+    "check": "node --check tests/smoke-init.mjs && node tests/smoke-init.mjs"
+  },
+  "keywords": ["pgm", "divida-ativa", "transacao-tributaria", "cedat"],
+  "license": "UNLICENSED"
+}
