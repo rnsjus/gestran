@@ -18,7 +18,9 @@ open index.html           # macOS
 node tests/smoke-init.mjs
 ```
 
-**Credenciais de demonstração:** gestor `admin` · CEDAT `cedat` · demais `123`.
+**Login:** e-mail + senha, contra as contas cadastradas em `usuarios[]` (hidratado do
+Google Sheets quando conectado). Não há contas fixas — o array `usuarios` começa vazio;
+o Administrador cria cada conta em **Admin → Criar login**, com e-mail obrigatório.
 
 ## Arquitetura
 

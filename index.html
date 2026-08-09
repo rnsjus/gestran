@@ -84,7 +84,6 @@
   .rail .ruser .cfgbtn{background:var(--surface);color:var(--txt2);border:1px solid var(--borda);border-radius:8px;font-size:12px;padding:7px 10px;cursor:pointer;font-weight:600;font-family:inherit;margin-left:auto}
   .rail.collapsed .ruser .cfgbtn{margin:6px 0 0}
   .rail .ruser .cfgbtn:hover{color:var(--azul);border-color:var(--azul)}
-  .rail .demo{display:none}
   /* busca global */
   .gsearch{width:100%;padding:14px 16px;border:none;border-bottom:1px solid var(--borda);font-size:16px;font-family:inherit;background:transparent;color:var(--txt)}
   .gsearch:focus{outline:none}
@@ -157,7 +156,6 @@
   .matrix input{width:17px;height:17px;accent-color:var(--verde);cursor:pointer}
   .rolepill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#E8F1F7;color:#1A5276}
   .rsel{padding:7px 10px;border:1px solid var(--borda);border-radius:8px;font-size:12.5px;font-family:inherit;background:var(--field);cursor:pointer}
-  .rail .demo{writing-mode:vertical-rl;font-size:10px;opacity:.55;letter-spacing:1.5px;margin-top:8px}
   /* auditoria + relatórios */
   .audrow td{font-size:12px}
   .badge-acao{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:700}
@@ -263,7 +261,7 @@
   /* ---------- CALENDÁRIO ---------- */
   .sess-layout{display:grid;grid-template-columns:340px 1fr;gap:18px}
   @media(max-width:900px){.sess-layout{grid-template-columns:1fr}}
-  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
   .cal-head b{color:var(--txt);font-size:15px;text-transform:capitalize}
   .cal-nav{background:var(--field);border:1px solid var(--borda);width:32px;height:32px;border-radius:8px;cursor:pointer;color:var(--azul);font-size:15px;font-weight:700}
   .cal-nav:hover{background:var(--azul);color:#fff;border-color:var(--azul)}
@@ -345,6 +343,9 @@
     .filtros{gap:9px}
     .filtros select,.filtros input{width:100%}
     .kcol{flex:0 0 82vw}
+    .act{padding:8px 10px;font-size:17px}
+    .hero .acts{width:100%}
+    .hero .acts .hbtn{flex:1;min-width:150px;text-align:center}
   }
   @media(max-width:520px){
     .cards{grid-template-columns:1fr}
@@ -418,13 +419,13 @@
         <div class="login-emblem"><span class="le-name">GC</span></div>
         <h1>Acessar o sistema</h1>
         <div class="sub">Entre com sua conta institucional para continuar.</div>
-        <label>Usuário</label>
-        <select id="lSel"></select>
+        <label>E-mail</label>
+        <input type="email" id="lEmail" placeholder="seu.email@pgm.fortaleza.ce.gov.br" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lSenha').focus()">
         <label>Senha</label>
-        <input type="password" id="lSenha" placeholder="Digite sua senha" onkeydown="if(event.key==='Enter')entrar()">
+        <input type="password" id="lSenha" placeholder="Digite sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')entrar()">
         <div class="login-err" id="lErr"></div>
-        <button class="entrar" onclick="entrar()">Entrar</button>
-        <div class="login-hint"><b>Ambiente de demonstração.</b> Senhas: gestor <b>admin</b> · CEDAT <b>cedat</b> · demais <b>123</b>. O perfil <b>Administrador</b> gerencia os níveis de acesso na aba Admin.</div>
+        <button class="entrar" id="lBtn" onclick="entrar()">Entrar</button>
+        <div class="login-hint">Use o e-mail e a senha cadastrados pelo Administrador. O perfil <b>Administrador</b> gerencia os níveis de acesso na aba Admin.</div>
       </div>
     </div>
   </div>
@@ -486,7 +487,6 @@
       <div class="uname" id="uName">—</div>
       <button class="cfgbtn" onclick="abrirConfig()" title="Configurações">⚙ Config</button>
     </div>
-    <div class="demo">PROTÓTIPO</div>
   </div>
 
   <!-- ============ CONTEÚDO ============ -->
@@ -497,8 +497,7 @@
         <div><h2>Dashboard CEDAT</h2><p>Métricas de desempenho das turmas — art. 10 · 1º semestre 2026</p></div>
         <div class="acts">
           <button class="hbtn" onclick="exportMetricas()">⬇ Exportar métricas (CSV)</button>
-          <button class="hbtn" onclick="toast('📄 Relatório semestral do art. 11 gerado (protótipo).')">📄 Relatório art. 11</button>
-          <span class="badge">dados de exemplo</span>
+          <button class="hbtn" onclick="toast('📄 Relatório semestral do art. 11 gerado.')">📄 Relatório art. 11</button>
         </div>
       </div>
       <div class="work">
@@ -894,7 +893,7 @@
               <button class="btn sec" onclick="gsEnviar()">⬆ Enviar dados atuais</button>
               <button class="btn sec" onclick="GS.flush()">↻ Reenviar pendências</button>
             </div>
-            <p class="mut" id="gsStatus" style="margin-top:12px">desconectado (modo demonstração)</p>
+            <p class="mut" id="gsStatus" style="margin-top:12px">desconectado (sem Google Sheets)</p>
           </div>
           <div class="panel">
             <h3>🩺 Diagnóstico do sistema <small>verificação de integridade dos dados</small></h3>
@@ -1929,13 +1928,8 @@ let perms={
   'Presidência': {dash:1,registro:0,agenda:1,monitor:1,relatorios:1,audit:0,admin:0},
   'Consulta':    {dash:1,registro:0,agenda:0,monitor:1,relatorios:0,audit:0,admin:0},
 };
-let usuarios=[
-  {n:'Dra. Valéria Lopes',r:'Administrador',av:'VL',senha:'admin',senhaPadrao:false},
-  {n:'Equipe CEDAT',r:'CEDAT',av:'CE',senha:'cedat',senhaPadrao:true},
-  {n:'Ana Ribeiro',r:'Secretaria',av:'AR',senha:'123',senhaPadrao:true},
-  {n:'Marcos Alves',r:'Secretaria',av:'MA',senha:'123',senhaPadrao:true},
-  {n:'Dr. A. Souza',r:'Presidência',av:'AS',senha:'123',senhaPadrao:true},
-];
+// Sem contas fixas: as contas reais vêm do Google Sheets (Admin → Criar login).
+let usuarios=[];
 /* ---- credenciais: hash SHA-256 (nunca guardar/transmitir senha em claro) ---- */
 async function hashSenha(txt){
   try{
@@ -1960,31 +1954,37 @@ function iniciarSessao(){
     }
   },60000);
 }
-let usuario=usuarios[0];
+let usuario=usuarios[0]||{n:'',r:'',av:'',hash:'',ativo:true};
 function iniciais(nome){const p=nome.replace(/^(Dr\.|Dra\.|Sr\.|Sra\.)\s*/,'').trim().split(/\s+/);return (((p[0]||'')[0]||'')+((p[1]||'')[0]||'')).toUpperCase();}
 function initSelects(){
-  lSel.innerHTML=usuarios.map((u,i)=>u.ativo===false?'':`<option value="${i}">${u.n} — ${u.r}</option>`).join('');
   audUser.innerHTML='<option>Todos</option>'+usuarios.map(u=>`<option>${u.n}</option>`).join('');
   nuPapel.innerHTML=PAPEIS.map(p=>`<option>${p}</option>`).join('');
 }
 /* ---- login / sessão ---- */
 let tentativas={};
+function loginCarregando(v){
+  const btn=document.getElementById('lBtn'), err=document.getElementById('lErr');
+  if(btn)btn.disabled=v;
+  if(v&&err)err.textContent='Carregando contas…';
+  else if(err&&err.textContent==='Carregando contas…')err.textContent='';
+}
 async function entrar(){
-  const u=usuarios[+lSel.value];
-  if(!u){lErr.textContent='Selecione um usuário.';return;}
-  if(u.ativo===false){lErr.textContent='Acesso desativado. Procure o Administrador.';return;}
-  if(!u.hash)await protegerSenhas();          // garante que o hash já foi calculado
-  if(tentativas[u.n]>=5){lErr.textContent='Muitas tentativas. Aguarde e tente novamente.';return;}
+  const email=(document.getElementById('lEmail').value||'').trim().toLowerCase();
+  if(!email){lErr.textContent='Informe seu e-mail.';return;}
+  const u=usuarios.find(x=>(x.email||'').toLowerCase()===email);
+  if(u&&u.ativo===false){lErr.textContent='Acesso desativado. Procure o Administrador.';return;}
+  if(u&&!u.hash)await protegerSenhas();          // garante que o hash já foi calculado
+  if(tentativas[email]>=5){lErr.textContent='Muitas tentativas. Aguarde e tente novamente.';return;}
   const h=await hashSenha(lSenha.value||'');
-  if(h!==u.hash){
-    tentativas[u.n]=(tentativas[u.n]||0)+1;
-    lErr.textContent='Senha incorreta para '+u.n+'. ('+tentativas[u.n]+'/5)';
-    log('Acesso','Tentativa de login malsucedida · '+u.n);
-    if(tentativas[u.n]>=5)setTimeout(()=>{tentativas[u.n]=0;},60000);
+  if(!u||h!==u.hash){
+    tentativas[email]=(tentativas[email]||0)+1;
+    lErr.textContent='E-mail ou senha inválidos. ('+tentativas[email]+'/5)';
+    log('Acesso','Tentativa de login malsucedida · '+email);
+    if(tentativas[email]>=5)setTimeout(()=>{tentativas[email]=0;},60000);
     return;
   }
-  tentativas[u.n]=0;
-  usuario=u; lErr.textContent=''; lSenha.value=''; marcarAtividade();
+  tentativas[email]=0;
+  usuario=u; lErr.textContent=''; lSenha.value=''; document.getElementById('lEmail').value=''; marcarAtividade();
   document.getElementById('loginScreen').classList.add('hide');
   uAv.textContent=u.av||iniciais(u.n); uName.textContent=u.n;
   applyPermissions(); renderAdmin();
@@ -2185,16 +2185,6 @@ function renderAudit(){
   audData.textContent=auditoria.length+' eventos na trilha';
 }
 function exportAudit(){const L=[['DataHora','Usuario','Papel','Tipo','Detalhe']];auditoria.forEach(a=>L.push([a.ts.toLocaleString('pt-BR'),a.user,a.role,a.tipo,a.detalhe]));baixarCSV('trilha-auditoria.csv',L);}
-function seedAudit(){
-  const mk=(min,u,tipo,det)=>auditoria.push({ts:new Date(Date.now()-min*60000),user:u.n,role:u.r,tipo,detalhe:det});
-  mk(325,usuarios[0],'Registro','Novo evento Protocolo · 0812.004660/2026-11');
-  mk(215,usuarios[2],'Vínculo','Acordo celebrado vinculado · Clínica Vida Plena Ltda');
-  mk(140,usuarios[1],'Sessão','Sessão agendada · Turma II · 10:00');
-  mk(62, usuarios[2],'Parcela','Acordo 0812.004521/2026-11 · parcela 9 → Paga');
-  mk(24, usuarios[0],'Exclusão','Registro removido · 0812.004544/2026-90');
-  auditoria.sort((a,b)=>b.ts-a.ts);
-}
-
 /* ================= RELATÓRIOS PERSONALIZADOS ================= */
 function baseFiltrada(){const tu=r_turma.value,tr=r_trib.value;return base.filter(x=>(tu==='Todas'||x.turma===tu)&&(tr==='Todos'||x.tributo===tr));}
 function kpisRep(d){
@@ -2297,7 +2287,7 @@ const GS={
   badge:function(){
     const el=document.getElementById('gsStatus'); if(!el)return;
     const n=this.fila.length;
-    if(!this.url){el.textContent='desconectado (modo demonstração)';el.style.color='var(--txt2)';return;}
+    if(!this.url){el.textContent='desconectado (sem Google Sheets)';el.style.color='var(--txt2)';return;}
     if(navigator.onLine===false){el.textContent='⚠ sem conexão — '+n+' alteração(ões) na fila';el.style.color='var(--coral)';return;}
     el.textContent=n?('sincronizando… '+n+' pendente(s)'):'conectado — sincronizado ✓';
     el.style.color=n?'var(--amarelo)':'var(--verde)';
@@ -2341,7 +2331,7 @@ function hydrate(d){
   toast('☁️ Dados carregados do Google Sheets.');
 }
 function gsConectar(){ var u=document.getElementById('gsUrl').value; GS.set(u);
-  if(!u){gsStatus('desconectado (modo demonstração)');return;}
+  if(!u){gsStatus('desconectado (sem Google Sheets)');return;}
   gsStatus('conectando…'); GS.load().then(function(ok){ if(ok){log('Acesso','Conectado ao Google Sheets');} else {gsStatus('sem dados na planilha — clique em "Enviar dados atuais"',false);} }); }
 function gsEnviar(){ if(!GS.ativo()){toast('Configure a URL primeiro.','warn');return;} gsStatus('enviando…'); GS.seed(); setTimeout(function(){GS.load();},1400); }
 window.addEventListener('online',function(){toast('🌐 Conexão restabelecida — enviando pendências.');GS.flush();});
@@ -2589,12 +2579,15 @@ passo('sessões',()=>{renderSess();renderAfast();});
 passo('prescrição',()=>renderPrescricao());
 passo('monitoramento',()=>{initMonitor();renderMonitor();renderEmp();});
 passo('alertas',()=>renderAlertas());
-passo('auditoria',()=>{seedAudit();renderAudit();});
+passo('auditoria',()=>renderAudit());
 passo('relatórios',()=>updateRepPreview());
 passo('sincronização',()=>GS.badge());
 passo('listeners',()=>[r_turma,r_trib,r_per].forEach(el=>el.addEventListener('change',updateRepPreview)));
 document.querySelectorAll('.rail button[data-v]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.v==='relatorios')updateRepPreview();if(b.dataset.v==='audit')renderAudit();if(b.dataset.v==='admin')renderAdmin();}));
-if(GS.ativo())GS.load();
+if(GS.ativo()){
+  loginCarregando(true);
+  GS.load().then(()=>loginCarregando(false)).catch(()=>loginCarregando(false));
+}
 </script>
 </body>
 </html>

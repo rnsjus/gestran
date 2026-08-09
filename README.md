@@ -9,7 +9,8 @@ Operacionaliza a Instrução Normativa nº 001/2026.
 ## Início rápido
 
 1. Abra `index.html` no navegador (não precisa de servidor nem build).
-2. Entre como **Dra. Valéria Lopes — Administrador**, senha `admin`.
+2. Entre com o e-mail e a senha da sua conta institucional (contas são criadas pelo
+   Administrador em **Admin → Criar login**).
 3. Explore: Dashboard · Registro (lista e Kanban) · Sessões · Monitorar · Relatórios · Auditoria · Admin.
 
 Atalhos: `Ctrl+K` busca global · `Alt+1..7` troca de aba · `Alt+M` recolhe o menu · `Esc` fecha modais.
@@ -52,8 +53,10 @@ na inicialização já derrubou a tela de login inteira.
 
 ## Persistência (opcional)
 
-Por padrão os dados vivem na memória do navegador (modo demonstração, com base simulada
-que cobre todos os cenários: prescrição crítica, acordo perdido, afastamento longo etc.).
+Sem o Google Sheets conectado, os dados ficam só na memória do navegador (mais os
+processos/acordos/sessões de exemplo que já vêm no código-fonte, cobrindo cenários como
+prescrição crítica, acordo perdido e afastamento longo). **Sem contas cadastradas na
+planilha, ninguém consegue entrar** — conecte o backend antes de usar de verdade.
 
 Para persistir de verdade, siga `backend/GESTRAN-Sheets-Guia-de-Implantacao.md`:
 publique o `Code.gs` como App da Web e cole a URL em **Admin → Integração Google Sheets**.
@@ -61,5 +64,5 @@ A partir daí toda alteração é enfileirada, sincronizada com retentativa e au
 
 ## Aviso
 
-Protótipo funcional para avaliação. Antes de uso em produção com dados reais de contribuintes:
+Sistema em avaliação institucional. Antes de uso em produção com dados reais de contribuintes:
 autenticação institucional (OAuth), revisão de LGPD e testes das regras jurídicas com a área técnica.
