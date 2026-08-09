@@ -3,6 +3,9 @@
 Sistema de Gestão Estratégica de Transações — PROFAZ/CEDAT · PGM Fortaleza
 Operacionaliza a Instrução Normativa nº 001/2026.
 
+**App publicado:** https://rnsjus.github.io/gestran/
+**Backend (Google Sheets):** conectado — ver `backend/GESTRAN-Sheets-Guia-de-Implantacao.md`
+
 ## Início rápido
 
 1. Abra `index.html` no navegador (não precisa de servidor nem build).
