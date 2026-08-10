@@ -2250,8 +2250,11 @@ function gerarRelatorioPDF(){
 }
 
 /* ================= INTEGRAÇÃO GOOGLE SHEETS (Apps Script) ================= */
+// URL padrão do backend publicado — vale para qualquer aparelho/navegador.
+// Admin -> Integração Google Sheets permite trocar por outra URL só neste navegador (fica em localStorage).
+const GS_URL_PADRAO='https://script.google.com/macros/s/AKfycbwm2fYggO0Wz9u6_nJTgQllWsHgVNRerWqmp0ONYYy5oIgNwslTSj6Ar7Hyro9nkrRD/exec';
 const GS={
-  url:(function(){try{return localStorage.getItem('gestran-gs-url')||'';}catch(e){return '';}})(),
+  url:(function(){try{return localStorage.getItem('gestran-gs-url')||GS_URL_PADRAO;}catch(e){return GS_URL_PADRAO;}})(),
   set:function(u){this.url=(u||'').trim();try{localStorage.setItem('gestran-gs-url',this.url);}catch(e){}},
   ativo:function(){return !!this.url;},
   call:function(action,payload){ if(!this.url)return Promise.resolve(null);
