@@ -619,7 +619,7 @@
             <div id="listaBox">
             <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
               <input class="search" id="busca" placeholder="Buscar por processo, contribuinte, relator..." oninput="renderProc()" style="flex:1;min-width:220px">
-              <select id="pTurma" onchange="renderProc()" style="padding:10px 13px;border:1px solid var(--borda);border-radius:12px;background:var(--surface);font-size:13px;cursor:pointer">
+              <select id="pTurmaFiltro" onchange="renderProc()" style="padding:10px 13px;border:1px solid var(--borda);border-radius:12px;background:var(--surface);font-size:13px;cursor:pointer">
                 <option value="Todas">Todas as turmas</option>
                 <option>Turma I</option><option>Turma II</option><option>Turma III</option>
               </select>
@@ -1197,7 +1197,7 @@ function renderPrescricao(){
 }
 function renderProc(){
   const q=(document.getElementById('busca').value||'').toLowerCase();
-  const tf=(document.getElementById('pTurma')||{}).value||'Todas';
+  const tf=(document.getElementById('pTurmaFiltro')||{}).value||'Todas';
   const tb=document.querySelector('#tblProc tbody');tb.innerHTML='';
   let vis=processos.filter(p=>(tf==='Todas'||p.turma===tf)&&(!q||(p.num+' '+p.contrib+' '+p.trib+' '+p.rel).toLowerCase().includes(q)));
   if(sortProc.k){const k=sortProc.k,d=sortProc.dir;
@@ -1212,7 +1212,7 @@ function renderProc(){
   if(typeof renderKanban==='function'&&modoRegistro==='kanban')renderKanban();
   if(typeof sincDashboard==='function')sincDashboard();
 }
-function filtrarTurmaProc(t){const el=document.getElementById('pTurma');if(el){el.value=t;renderProc();}}
+function filtrarTurmaProc(t){const el=document.getElementById('pTurmaFiltro');if(el){el.value=t;renderProc();}}
 function renderResumoTurma(q,tf){
   const el=document.getElementById('resumoTurma'); if(!el)return;
   const cont={}; turmas.forEach(t=>cont[t]=0);

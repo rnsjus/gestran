@@ -66,7 +66,7 @@ const IDS = `fTurma fTrib fRel fPer fDe fAte filtroInfo wrapDe wrapAte kRec kExi
 kAdimp kRecD kExitoD tblRel alertList alCnt railBadge mTot mAd mIn mQt mPerd mRec mSaldo mData mAlertList
 mAlCnt mBusca mStatus mTurma mCnt buscaEmp modal overlay audBusca audUser audTipo audCnt audData aTot aHoje
 aUsers aDel uAv uName lEmail lSenha lErr lBtn nuNome nuEmail nuPapel nuSenha admUCnt tblMatrix tblUsers gsUrl gsStatus
-r_kpi r_rel r_aco r_ses r_aud r_per r_turma r_trib repPreview sTurma sData sPres sServ sPauta pTurma
+r_kpi r_rel r_aco r_ses r_aud r_per r_turma r_trib repPreview sTurma sData sPres sServ sPauta pTurma pTurmaFiltro
 sCnt selInfo calLabel afMembro afTipo afIni afFim backdrop sAtual sNova sConf sErr`.split(/\s+/).filter(Boolean);
 for (const id of IDS) {
   Object.defineProperty(globalThis, id, { get: () => doc.getElementById(id), configurable: true });
