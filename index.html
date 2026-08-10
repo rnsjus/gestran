@@ -263,6 +263,7 @@
   .sess-layout{display:grid;grid-template-columns:340px 1fr;gap:18px}
   @media(max-width:900px){.sess-layout{grid-template-columns:1fr}}
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .cal-nav-group{display:flex;align-items:center;gap:10px}
   .cal-head b{color:var(--txt);font-size:15px;text-transform:capitalize}
   .cal-nav{background:var(--field);border:1px solid var(--borda);width:32px;height:32px;border-radius:8px;cursor:pointer;color:var(--azul);font-size:15px;font-weight:700}
   .cal-nav:hover{background:var(--azul);color:#fff;border-color:var(--azul)}
@@ -679,9 +680,11 @@
           <!-- calendário -->
           <div class="panel">
             <div class="cal-head">
-              <button class="cal-nav" onclick="mudaMes(-1)">‹</button>
-              <b id="calLabel">—</b>
-              <button class="cal-nav" onclick="mudaMes(1)">›</button>
+              <div class="cal-nav-group">
+                <button class="cal-nav" onclick="mudaMes(-1)">‹</button>
+                <b id="calLabel">—</b>
+                <button class="cal-nav" onclick="mudaMes(1)">›</button>
+              </div>
               <button class="cal-nav" style="width:auto;padding:0 10px;font-size:11px" onclick="irParaHoje()">Hoje</button>
             </div>
             <div class="cal-grid" id="calDow"></div>
